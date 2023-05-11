@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Collection</title>
+
+    <style>
+        html,body{margin: 0}
+        .container{
+            overflow: hidden;
+            display: block;
+            padding: 15px 20px;
+            margin: 0 30px;
+            width: 800px;
+            border: 2px solid #ddd;
+            box-shadow: 0px 0px 0px #999;
+        }
+        .left_side{
+            width: 30%;
+            margin-right: 4%;
+            float: left;
+        }
+        .right_side{
+            width: 66%;
+            float: left;
+        }
+        table{
+            margin-top: 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left_side">
+            <h3>Add Book</h3>
+            <form method="post" onsubmit="add_book(event)">
+                <p>
+                    Title <br>
+                    <input type="text" name="title" id="title">
+                </p>
+                <p>
+                    Author <br>
+                    <input type="text" name="author" id="author">
+                </p>
+                <button>Add book</button>
+            </form>
+        </div>
+        <div class="right_side">
+            <h4>Books lists</h4>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>SL</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Publish date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="books_data">
+                    <tr>
+                        <td colspan="5">Loading ...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function add_book(e){
+            e.preventDefault();
+
+            var title = document.getElementById('title');
+            var author = document.getElementById('author');
+            if(!title.value.length || !author.value.length){
+                alert('Fillup fields');
+                return;
+            }
+
+            const data = await fetch('http://localhost:3000/books',{
+                method: 'POST',
+                headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({title:title.value,author:author.value})
+            }).then(res=>res.json());
+
+            if(data && data.id){
+                title.value = '';
+                author.value = '';
+                load_books();
+            }
+        }
+        load_books();
+        async function load_books(){
+            const books = await fetch('http://localhost:3000/books').then((res)=>res.json());
+            
+            var html = '';
+            if(books && books.length){
+                books.forEach(book => {
+                    html += `<tr>
+                            <td>${book.id}</td>
+                            <td>${book.title}</td>
+                            <td>${book.author}</td>
+                            <td>${book.publishDate}</td>
+                            <td><button type="button" onclick="delete_book(${book.id})">Delete</button></td>
+                        </tr>`;
+                });
+            }else{
+                html += `<tr>
+                    <td colspan="5">No books found</td>
+                </tr>`;
+            }
+
+            const tbody = document.getElementById('books_data');
+            tbody.innerHTML = html;
+        }
+
+        async function delete_book( book_id ){
+            if( confirm('Do you want to delete it') ){
+                const data = await fetch(`http://localhost:3000/books/${book_id}`,{
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                }).then(res=>res.json());
+
+                if(data && data.message){
+                    alert(data.message);
+                    load_books();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
